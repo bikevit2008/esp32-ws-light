@@ -1,22 +1,80 @@
 var wifi = require('Wifi');
 var http = require('http');
+var fs = require("fs");
 
 var ssid = 'Vitaly';
 var password = 'password1';
-
 var port = 80;
 
-var page = '<h1>Hello World!</h1>';
+var chunksize = 2048;
 
-function onPageRequest (req, res) {
-    res.writeHead(200, {'Content-Type': 'text/html'});
-    res.end(page);
+var lengthStrip = 21;
+var dataPin = D13;
+
+
+try {
+    fs.readdirSync();
+} catch (e) { //'Uncaught Error: Unable to mount media : NO_FILESYSTEM'
+    console.log('Formatting FS - only need to do once');
+    E.flashFatFS({ format: true });
 }
+E.on('init', function() {startDevice();});
+
+
+function startDevice(){
+  startWifi();
+  startServer();
+}
+function startWifi(){
+  wifi.connect(ssid, {password: password}, function() {
+    console.log(`IP address: ${wifi.getIP().ip}`);
+});
+}
+function onPageRequest (req, res) {
+    var a = url.parse(req.url, true);
+    var pathname = a.pathname;
+    if(pathname == '/'){
+        pathname = 'index.html';
+    }
+    var typeFile = pathname.split('/').pop().split(".").pop();
+    var contentType = '';
+    switch (typeFile) {
+        case 'css':
+            contentType = 'text/css; charset=UTF-8';
+            break;
+        case 'js':
+            contentType = 'application/javascript; charset=UTF-8';
+            break;
+        case 'json':
+            contentType = 'application/json; charset=UTF-8';
+            break;
+        case 'ico':
+            contentType = 'image/x-icon';
+            break;
+        case 'html':
+            contentType = 'text/html; charset=UTF-8';
+            break;
+        default:
+            contentType = 'text/plain; charset=UTF-8';
+            break;
+    }
+    pathname += '.gz';
+    try{
+        var f = E.openFile(pathname, "r");
+        var options = { chunkSize : int=chunksize };
+        res.writeHead(200, {'Content-Type': contentType, 'Content-Encoding': 'gzip'});
+        f.pipe(res, options); // streams the file to the HTTP response
+
+    } catch (err) {
+        // else not found - send a 404 message
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.end("404: Page "+pathname+" not found");
+    }
+}
+
+function startServer(){
 var server = require('ws').createServer(onPageRequest);
-
-wifi.connect(ssid, {password: password}, function() {
-
-    server.listen(port);
+server.listen(port);
 
     server.on("websocket", function(ws) {
 
@@ -33,6 +91,24 @@ wifi.connect(ssid, {password: password}, function() {
                             if(parsedMsg.color){
                                 setColor(parsedMsg.color);
                                 ws.send('Color changed!');
+                                break;
+                            }
+                        case 'setChunkSize':
+                            if(parsedMsg.chunkSize){
+                                chunksize = parsedMsg.chunkSize;
+                                var resMsg = {method: 'setChunkSize', status: 'success'};
+                                var resMsgJson = JSON.stringify(resMsg);
+                                ws.send(resMsgJson);
+                                console.log('chunkSize modified');
+                                break;
+                            }
+                        case 'setLengthStrip':
+                            if(parsedMsg.lengthStrip){
+                                lengthStrip = parsedMsg.lengthStrip;
+                                var resMsg = {method: 'lengthStrip', status: 'success'};
+                                var resMsgJson = JSON.stringify(resMsg);
+                                ws.send(resMsgJson);
+                                console.log('lengthStrip modified');
                                 break;
                             }
                         default:
@@ -66,11 +142,9 @@ wifi.connect(ssid, {password: password}, function() {
     });
 
     console.log(`Web server running at http://${wifi.getIP().ip}:${port}`);
-});
+}
 
 function setColor(color){
-    var lengthStrip = 21;
-    var dataPin = D17;
     var pixels = new Uint8ClampedArray(lengthStrip * 3);
     for (var i=0;i<pixels.length; i+=3) {
         pixels[i] = color[1];//ws2812 has GRB nor RGB
@@ -79,3 +153,5 @@ function setColor(color){
     }
     require("neopixel").write(dataPin, pixels);
 }
+
+
