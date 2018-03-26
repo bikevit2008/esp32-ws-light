@@ -1,0 +1,12 @@
+var wifi = require('Wifi');
+var http = require('http');
+var fs = require("fs");
+
+var ssid = 'Vitaly';
+var password = 'password1';
+
+var port = 80;
+
+wifi.connect(ssid, {password: password}, function() {
+    console.log(`IP address: ${wifi.getIP().ip}`);
+});
