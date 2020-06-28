@@ -2,8 +2,8 @@ var wifi = require('Wifi');
 var http = require('http');
 var fs = require("fs");
 
-var ssid = 'Vitaly';
-var password = 'password1';
+var ssid = 'Wifi-ssid';
+var password = 'password';
 var port = 80;
 
 var chunksize = 2048;
