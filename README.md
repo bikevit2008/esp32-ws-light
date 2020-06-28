@@ -8,3 +8,7 @@ For minimal size in memory, i used gzip
 
 For working with code you need download files from any server you have. And after use Server.js.
 For starting Server.js from bootload search command on Espruino - it can works.
+
+
+Source for client files probably in https://github.com/bikevit2008/esp-ws-client.
+I forgot where i have source.
