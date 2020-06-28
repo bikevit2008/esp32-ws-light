@@ -4,3 +4,4 @@
 ### Espruino, ws2812b leds;
 ### React.js + Redux client (files) and Server in ESP32.
 ### Communication between server and client by WebSockets
+For minimal size in memory, i used gzip
